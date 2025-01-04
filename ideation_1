@@ -1,0 +1,136 @@
+import random
+from collections import defaultdict
+
+class AIRapper:
+    def __init__(self):
+        # Dictionary to store word relationships for Markov chain
+        self.word_dict = defaultdict(list)
+        # Store common rap words and phrases for authenticity
+        self.rap_vocabulary = {
+            'openers': ["Yeah", "Listen up", "Check it", "Yo"],
+            'endings': ["Peace out", "Drop the mic", "That's real", "Word"],
+            'adlibs': ["Uh", "Yeah", "What", "Right"],
+        }
+        # Store rhyming words
+        self.rhyme_dict = self._initialize_rhyme_dict()
+        # Define different flow patterns (syllable counts per line)
+        self.flow_patterns = [
+            [8, 8, 8, 8],  # Classic pattern
+            [16, 16],      # Long lines
+            [6, 6, 6, 6]   # Quick flow
+        ]
+    
+    def _initialize_rhyme_dict(self):
+        """Initialize a basic rhyming dictionary"""
+        return {
+            'ay': ['day', 'way', 'play', 'stay', 'say'],
+            'ight': ['fight', 'right', 'night', 'sight', 'light'],
+            'ow': ['now', 'how', 'wow', 'allow', 'pow'],
+            'ame': ['fame', 'game', 'name', 'shame', 'flame'],
+            'ell': ['tell', 'well', 'sell', 'bell', 'spell']
+        }
+    
+    def train_on_text(self, text):
+        """Train the rapper on input text to build its vocabulary"""
+        words = text.lower().split()
+        for i in range(len(words) - 2):
+            self.word_dict[tuple(words[i:i+2])].append(words[i+2])
+    
+    def generate_rhyming_pair(self):
+        """Generate a pair of rhyming lines"""
+        # Choose a random rhyme sound
+        rhyme_sound = random.choice(list(self.rhyme_dict.keys()))
+        rhyming_words = self.rhyme_dict[rhyme_sound]
+        
+        # Select two different rhyming words
+        end_word1, end_word2 = random.sample(rhyming_words, 2)
+        
+        # Generate the lines backwards from the rhyming words
+        line1 = self._generate_line_with_ending(end_word1)
+        line2 = self._generate_line_with_ending(end_word2)
+        
+        return line1, line2
+    
+    def _generate_line_with_ending(self, end_word):
+        """Generate a single line ending with a specific word"""
+        line = [end_word]
+        current_pair = random.choice(list(self.word_dict.keys()))
+        
+        # Build line backwards until we reach desired length
+        while len(line) < 8:
+            line.insert(0, current_pair[1])
+            next_pairs = [k for k in self.word_dict.keys() if k[1] == current_pair[0]]
+            if not next_pairs:
+                break
+            current_pair = random.choice(next_pairs)
+        
+        return ' '.join(line)
+    
+    def generate_verse(self, num_lines=8):
+        """Generate a complete verse"""
+        verse = []
+        
+        # Add opener
+        verse.append(random.choice(self.rap_vocabulary['openers']))
+        
+        # Generate pairs of rhyming lines
+        for _ in range((num_lines - 1) // 2):
+            line1, line2 = self.generate_rhyming_pair()
+            verse.extend([line1, line2])
+            
+            # Occasionally add adlib
+            if random.random() < 0.3:
+                verse.append(random.choice(self.rap_vocabulary['adlibs']))
+        
+        # Add ending
+        verse.append(random.choice(self.rap_vocabulary['endings']))
+        
+        return verse
+    
+    def generate_song(self, num_verses=3):
+        """Generate a complete song with multiple verses"""
+        song = []
+        
+        # Generate hook/chorus
+        hook = self.generate_verse(num_lines=4)
+        
+        # Structure: Hook - Verse - Hook - Verse - Hook
+        song.extend(hook)  # Opening hook
+        
+        for i in range(num_verses):
+            song.append("\n--- Verse {} ---".format(i + 1))
+            verse = self.generate_verse()
+            song.extend(verse)
+            
+            if i < num_verses - 1:
+                song.append("\n--- Hook ---")
+                song.extend(hook)
+        
+        # End with hook
+        song.append("\n--- Hook ---")
+        song.extend(hook)
+        
+        return '\n'.join(song)
+
+# Example usage
+if __name__ == "__main__":
+    # Create and train the rapper
+    rapper = AIRapper()
+    
+    # Training data - you would typically use a much larger dataset
+    sample_lyrics = """
+    moving through the streets at night
+    keeping dreams within my sight
+    working hard to reach the top
+    never letting my flow drop
+    living life day by day
+    finding success my own way
+    staying true to who I am
+    delivering flows like bam
+    """
+    
+    rapper.train_on_text(sample_lyrics)
+    
+    # Generate a song
+    print("=== AI Generated Rap Song ===")
+    print(rapper.generate_song())
